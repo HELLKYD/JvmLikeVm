@@ -4,13 +4,11 @@ import (
 	"log"
 	"os"
 	"toyJVM/base"
-	"toyJVM/classes"
 	"toyJVM/instructions"
 )
 
 func main() {
 	instructions.RegisterHandlers()
-	classes.RegisterAllClasses()
 	// f, _ := os.Open("./testSource/Add.class")
 	f, _ := os.Open("./out.class")
 	class, _ := base.Load(f)

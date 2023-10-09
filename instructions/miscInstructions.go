@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"log"
 	"toyJVM/base"
-	"toyJVM/classes"
+	"toyJVM/lib"
 )
 
 func ldc(f *base.Frame, newIP *int, n int) interface{} {
@@ -25,16 +25,17 @@ func ldc(f *base.Frame, newIP *int, n int) interface{} {
 	return nil
 }
 
+// TODO: löschen
 func getstatic(f *base.Frame, newIP *int, n int) interface{} {
-	indexByte1, indexByte2 := f.Code[f.IP+1], f.Code[f.IP+2]
-	index := binary.BigEndian.Uint16([]byte{indexByte1, indexByte2})
-	fieldRef := f.Class.ConstPool.ResolveRef(index)
-	printStream := classes.Classes[fieldRef.Class].GetField(fieldRef.Name)
-	if printStream.GetType() != fieldRef.Type[1:len(fieldRef.Type)-1] {
-		log.Fatalf("error: types are not matching (%v|%v)", printStream.GetType(), fieldRef.Type)
-	}
-	f.Stack = append(f.Stack, base.Value{Value: printStream})
-	*newIP = 3
+	// indexByte1, indexByte2 := f.Code[f.IP+1], f.Code[f.IP+2]
+	// index := binary.BigEndian.Uint16([]byte{indexByte1, indexByte2})
+	// fieldRef := f.Class.ConstPool.ResolveRef(index)
+	// printStream := classes.Classes[fieldRef.Class].GetField(fieldRef.Name)
+	// if printStream.GetType() != fieldRef.Type[1:len(fieldRef.Type)-1] {
+	// 	log.Fatalf("error: types are not matching (%v|%v)", printStream.GetType(), fieldRef.Type)
+	// }
+	// f.Stack = append(f.Stack, base.Value{Value: printStream})
+	// *newIP = 3
 	return nil
 }
 
@@ -46,14 +47,19 @@ func invokevirtual(f *base.Frame, newIP *int, n int) interface{} {
 	for i := n - 1; i <= argCount; i++ {
 		args = append(args, f.Stack[i])
 	}
-	classToCallMethodOn := f.Stack[(n-1)-argCount].Value.(base.Object)
-	if classToCallMethodOn.GetType() != methodRef.Class {
-		log.Fatalf("error: wrong class (%v|%v)", classToCallMethodOn.GetType(), methodRef.Class)
+	// classToCallMethodOn := f.Stack[(n-1)-argCount].Value.(base.Object)
+	// if classToCallMethodOn.GetType() != methodRef.Class {
+	// 	log.Fatalf("error: wrong class (%v|%v)", classToCallMethodOn.GetType(), methodRef.Class)
+	// }
+	var retValue interface{}
+	if fun, ok := lib.BuiltInFunctions[methodRef.Name]; ok {
+		retValue = fun(args...)
+	} else {
+		retValue = base.Exec(f.Class.Frame(methodRef.Name, args...)) //classToCallMethodOn.InvokeMethod(methodRef.Name, args)
 	}
-	retValue := classToCallMethodOn.InvokeMethod(methodRef.Name, args)
 	if retValue != nil {
-		f.Stack = append(f.Stack, base.Value{Value: retValue})
 		f.Stack = f.Stack[n-1:]
+		f.Stack[n-1] = base.Value{Value: retValue}
 		*newIP = 3
 		return nil
 	}

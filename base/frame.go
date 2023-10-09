@@ -34,7 +34,7 @@ func (c Class) Frame(method string, args ...Value) Frame {
 }
 
 func Exec(f Frame) interface{} {
-	for {
+	for int(f.IP) < len(f.Code) {
 		op := f.Code[f.IP]
 		newIP := 1
 		log.Printf("OP:%02x STACK%v", op, f.Stack)
@@ -48,4 +48,5 @@ func Exec(f Frame) interface{} {
 		}
 		f.IP += uint32(newIP)
 	}
+	return nil
 }
