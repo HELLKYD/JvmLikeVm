@@ -3,6 +3,7 @@ package instructions
 import (
 	"encoding/binary"
 	"log"
+	"strconv"
 	"toyJVM/base"
 	"toyJVM/lib"
 )
@@ -42,9 +43,9 @@ func getstatic(f *base.Frame, newIP *int, n int) interface{} {
 func invokevirtual(f *base.Frame, newIP *int, n int) interface{} {
 	index := binary.BigEndian.Uint16([]byte{f.Code[f.IP+1], f.Code[f.IP+2]})
 	methodRef := f.Class.ConstPool.ResolveRef(index)
-	argCount := n - 1
+	argCount := getArgCountFromFunctionDescriptor(methodRef.Type)
 	args := make([]base.Value, 0)
-	for i := n - 1; i <= argCount; i++ {
+	for i := n - 1; i >= n-argCount; i-- {
 		args = append(args, f.Stack[i])
 	}
 	// classToCallMethodOn := f.Stack[(n-1)-argCount].Value.(base.Object)
@@ -57,15 +58,31 @@ func invokevirtual(f *base.Frame, newIP *int, n int) interface{} {
 	} else {
 		retValue = base.Exec(f.Class.Frame(methodRef.Name, args...)) //classToCallMethodOn.InvokeMethod(methodRef.Name, args)
 	}
+	f.Stack = f.Stack[:n-argCount]
 	if retValue != nil {
-		f.Stack = f.Stack[n-1:]
-		f.Stack[n-1] = base.Value{Value: retValue}
+		f.Stack = append(f.Stack, base.Value{Value: retValue.(base.Value).Value})
 		*newIP = 3
 		return nil
 	}
-	f.Stack = f.Stack[n-1 : n-1]
 	*newIP = 3
 	return nil
+}
+
+func getArgCountFromFunctionDescriptor(fd string) int {
+	count := ""
+	for _, char := range fd {
+		if char == '(' {
+			continue
+		} else if char == ')' {
+			break
+		}
+		count += string(char)
+	}
+	countAsInt, err := strconv.Atoi(count)
+	if err != nil {
+		log.Fatalf("error: cannot retrieve argCount (%v)", err)
+	}
+	return countAsInt
 }
 
 func bipush(f *base.Frame, newIP *int, n int) interface{} {

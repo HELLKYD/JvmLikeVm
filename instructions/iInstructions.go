@@ -170,7 +170,7 @@ func iconst_m1(f *base.Frame, newIP *int, n int) interface{} {
 }
 
 func iconst_0(f *base.Frame, newIP *int, n int) interface{} {
-	f.Stack = append(f.Stack, base.Value{Value: 0})
+	f.Stack = append(f.Stack, base.Value{Value: int32(0)})
 	return nil
 }
 
